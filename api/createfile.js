@@ -66,8 +66,8 @@ export default async function handler(req, res) {
       filename: `${channelID}.html`
     });
 
-    // Get transcript content
-    const transcriptContent = transcript.toString();
+    // Get the HTML content directly from the attachment
+    const htmlContent = transcript.attachment.toString('utf-8');
 
     // Create or update file in GitHub
     const fileResponse = await octokit.repos.createOrUpdateFileContents({
@@ -75,7 +75,7 @@ export default async function handler(req, res) {
       repo: GITHUB_REPO,
       path: `transcripts/${channelID}.html`,
       message: `Add transcript for channel ${channelID}`,
-      content: Buffer.from(transcriptContent).toString('base64'),
+      content: Buffer.from(htmlContent).toString('base64'),
       branch: BRANCH,
     });
 
@@ -101,8 +101,5 @@ export default async function handler(req, res) {
       error: 'Internal server error',
       message: error.message,
     });
-  } finally {
-    // Don't destroy the client as it might be reused in serverless environment
-    // but you might want to implement a cleanup strategy based on your needs
   }
 }
