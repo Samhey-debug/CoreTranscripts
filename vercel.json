@@ -1,15 +1,18 @@
 {
   "version": 2,
+  "env": {
+    "GITHUB_TOKEN": "@github_token"
+  },
   "builds": [
     {
-      "src": "createFile.js",
+      "src": "api/createfile.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/createFile",
-      "dest": "createFile.js"
+      "dest": "api/createfile.js"
     }
   ]
 }
