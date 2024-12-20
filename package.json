@@ -1,9 +1,26 @@
 {
-  "name": "vercel-github-api",
+  "name": "discord-transcript-api",
   "version": "1.0.0",
+  "description": "API to generate Discord channel transcripts and save them to GitHub",
   "main": "index.js",
-  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel deploy",
+    "start": "node index.js"
+  },
   "dependencies": {
-    "octokit": "^2.0.15"
-  }
+    "discord-html-transcripts": "^3.2.0",
+    "discord.js": "^14.14.1",
+    "@octokit/rest": "^20.0.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "vercel": "^32.7.2"
+  },
+  "engines": {
+    "node": ">=16.9.0"
+  },
+  "author": "",
+  "license": "MIT"
 }
