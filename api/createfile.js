@@ -1,83 +1,98 @@
-import { Octokit } from "octokit";
-import fetch from "node-fetch";
+// Import required dependencies
+import { createTranscript } from 'discord-html-transcripts';
+import { Octokit } from '@octokit/rest';
+import { Client, IntentsBitField } from 'discord.js';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+// Initialize Discord client
+const client = new Client({
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMembers,
+	],
+});
+
+// Initialize GitHub client
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN,
+});
+
+// Configure your GitHub repository details
+const GITHUB_OWNER = 'Samhey-debug';
+const GITHUB_REPO = 'CoreTranscripts';
+const BRANCH = 'main';  // or whatever branch you want to use
 
 export default async function handler(req, res) {
-  const githubToken = process.env.GITHUB_TOKEN;
-  const vercelDeployHook = process.env.VERCEL_DEPLOY_HOOK; // Add your deploy hook URL here
-
-  const owner = "Samhey-debug"; // Replace with your GitHub username
-  const repo = "CoreTranscripts";       // Replace with your repository name
-  const branch = "main";               // Replace with your branch name if different
-  const octokit = new Octokit({ auth: githubToken });
-
-  const { name, content } = req.query;
-
-  if (!name || !content) {
-    return res.status(400).json({ error: "Missing 'name' or 'content' parameter." });
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!name.endsWith(".html")) {
-    return res.status(400).json({ error: "Only .html files are supported." });
+  const { channelID } = req.query;
+
+  // Validate channelID
+  if (!channelID) {
+    return res.status(400).json({ error: 'Channel ID is required' });
   }
 
   try {
-    // Get the current commit and tree SHA
-    const { data: refData } = await octokit.rest.git.getRef({
-      owner,
-      repo,
-      ref: `heads/${branch}`,
-    });
-
-    const baseTree = refData.object.sha;
-
-    // Create the file blob
-    const { data: blobData } = await octokit.rest.git.createBlob({
-      owner,
-      repo,
-      content: Buffer.from(content).toString("base64"),
-      encoding: "base64",
-    });
-
-    // Create the new tree
-    const { data: treeData } = await octokit.rest.git.createTree({
-      owner,
-      repo,
-      base_tree: baseTree,
-      tree: [
-        {
-          path: name,
-          mode: "100644", // File mode
-          type: "blob",
-          sha: blobData.sha,
-        },
-      ],
-    });
-
-    // Commit the new tree
-    const { data: commitData } = await octokit.rest.git.createCommit({
-      owner,
-      repo,
-      message: `Add ${name}`,
-      tree: treeData.sha,
-      parents: [baseTree],
-    });
-
-    // Update the reference
-    await octokit.rest.git.updateRef({
-      owner,
-      repo,
-      ref: `heads/${branch}`,
-      sha: commitData.sha,
-    });
-
-    // Trigger Vercel deploy hook
-    if (vercelDeployHook) {
-      await fetch(vercelDeployHook, { method: "POST" });
+    // Make sure Discord client is ready
+    if (!client.isReady()) {
+      await client.login(process.env.DISCORD_TOKEN);
     }
 
-    res.status(201).json({ message: `File '${name}' created successfully!` });
+    // Get the channel
+    const channel = await client.channels.fetch(channelID);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+
+    // Generate transcript
+    const transcript = await createTranscript(channel, {
+      filename: `${channelID}.html`,
+      saveImages: true,
+      poweredBy: false,
+    });
+
+    // Get transcript content
+    const transcriptContent = transcript.toString();
+
+    // Create or update file in GitHub
+    const fileResponse = await octokit.repos.createOrUpdateFileContents({
+      owner: GITHUB_OWNER,
+      repo: GITHUB_REPO,
+      path: `transcripts/${channelID}.html`,
+      message: `Add transcript for channel ${channelID}`,
+      content: Buffer.from(transcriptContent).toString('base64'),
+      branch: BRANCH,
+    });
+
+    // Trigger Vercel deployment if needed
+    if (process.env.VERCEL_DEPLOY_HOOK) {
+      await fetch(process.env.VERCEL_DEPLOY_HOOK, {
+        method: 'POST',
+      });
+    }
+
+    // Return the URL to the created file
+    const fileUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${BRANCH}/transcripts/${channelID}.html`;
+    
+    return res.status(200).json({
+      success: true,
+      url: fileUrl,
+      sha: fileResponse.data.content.sha,
+    });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create file.", details: error.message });
+    console.error('Error:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+    });
   }
 }
