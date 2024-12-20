@@ -1,9 +1,15 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "createFile.js",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/createFile",
-      "dest": "app.js"
+      "dest": "createFile.js"
     }
   ]
 }
