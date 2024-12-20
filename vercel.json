@@ -4,12 +4,20 @@
     {
       "src": "api/createfile.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "**/*.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/createFile",
       "dest": "api/createfile.js"
+    },
+    {
+      "src": "/(.*).html",
+      "dest": "/$1.html"
     }
   ]
 }
