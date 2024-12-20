@@ -10,12 +10,15 @@ export default async function handler(req, res) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
   const REPO_OWNER = "Samhey-debug"; // Replace with your GitHub username
   const REPO_NAME = "CoreTranscripts"; // Replace with your repository name
-  const BRANCH = "main"; // Replace with the branch you want to use
+  const BRANCH = "main"; // Replace with your branch name
 
   const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
   try {
-    // Check if the file already exists
+    // Validate repository access
+    await octokit.rest.repos.get({ owner: REPO_OWNER, repo: REPO_NAME });
+
+    // Check if file already exists
     let sha;
     try {
       const { data: existingFile } = await octokit.rest.repos.getContent({
@@ -26,7 +29,9 @@ export default async function handler(req, res) {
       });
       sha = existingFile.sha;
     } catch (error) {
-      if (error.status !== 404) throw error;
+      if (error.status !== 404) {
+        return res.status(500).json({ error: `Failed to check file existence: ${error.message}` });
+      }
     }
 
     // Create or update the file
