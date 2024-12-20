@@ -1,25 +1,17 @@
-// Import required dependencies
-import { createTranscript } from 'discord-html-transcripts';
+import { DiscordTranscripts } from 'discord-html-transcripts';
 import { Octokit } from '@octokit/rest';
-import { Client, IntentsBitField } from 'discord.js';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
-
-// Initialize Discord client
-const client = new Client({
-	intents: [
-		GatewayIntentBits.Guilds,
-		GatewayIntentBits.GuildMessages,
-		GatewayIntentBits.MessageContent,
-		GatewayIntentBits.GuildMembers,
-	],
-});
 
 // Initialize GitHub client
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
+});
+
+// Initialize Discord Transcripts
+const transcripts = new DiscordTranscripts({
+  token: process.env.DISCORD_TOKEN
 });
 
 // Configure your GitHub repository details
@@ -41,22 +33,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Make sure Discord client is ready
-    if (!client.isReady()) {
-      await client.login(process.env.DISCORD_TOKEN);
-    }
-
-    // Get the channel
-    const channel = await client.channels.fetch(channelID);
-    if (!channel) {
-      return res.status(404).json({ error: 'Channel not found' });
-    }
-
     // Generate transcript
-    const transcript = await createTranscript(channel, {
-      filename: `${channelID}.html`,
+    const transcript = await transcripts.createTranscript({
+      channel: channelID,
       saveImages: true,
       poweredBy: false,
+      filename: `${channelID}.html`
     });
 
     // Get transcript content
