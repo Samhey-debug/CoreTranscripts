@@ -1,9 +1,14 @@
 import { Octokit } from "octokit";
+import fetch from "node-fetch";
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed. Use GET." });
-  }
+  const githubToken = process.env.GITHUB_TOKEN;
+  const vercelDeployHook = process.env.VERCEL_DEPLOY_HOOK; // Add your deploy hook URL here
+
+  const owner = "Samhey-debug"; // Replace with your GitHub username
+  const repo = "CoreTranscripts";       // Replace with your repository name
+  const branch = "main";               // Replace with your branch name if different
+  const octokit = new Octokit({ auth: githubToken });
 
   const { name, content } = req.query;
 
@@ -11,12 +16,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing 'name' or 'content' parameter." });
   }
 
-  const githubToken = process.env.GITHUB_TOKEN;
-  const owner = "Samhey-debug"; // Replace with your GitHub username
-  const repo = "CoreTranscripts";       // Replace with your repository name
-  const branch = "main";               // Replace with your branch name if different
-
-  const octokit = new Octokit({ auth: githubToken });
+  if (!name.endsWith(".html")) {
+    return res.status(400).json({ error: "Only .html files are supported." });
+  }
 
   try {
     // Get the current commit and tree SHA
@@ -67,6 +69,11 @@ export default async function handler(req, res) {
       ref: `heads/${branch}`,
       sha: commitData.sha,
     });
+
+    // Trigger Vercel deploy hook
+    if (vercelDeployHook) {
+      await fetch(vercelDeployHook, { method: "POST" });
+    }
 
     res.status(201).json({ message: `File '${name}' created successfully!` });
   } catch (error) {
