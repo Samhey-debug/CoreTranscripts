@@ -1,11 +1,9 @@
 {
-  "name": "github-file-creator",
+  "name": "github-file-api",
   "version": "1.0.0",
-  "main": "app.js",
-  "scripts": {
-    "start": "vercel dev"
-  },
+  "main": "createFile.js",
+  "license": "MIT",
   "dependencies": {
-    "axios": "^1.5.0"
+    "octokit": "^3.2.0"
   }
 }
