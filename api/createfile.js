@@ -1,4 +1,4 @@
-import { DiscordTranscripts } from 'discord-html-transcripts';
+import discordTranscripts from 'discord-html-transcripts';
 import { Octokit } from '@octokit/rest';
 import dotenv from 'dotenv';
 
@@ -7,11 +7,6 @@ dotenv.config();
 // Initialize GitHub client
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
-});
-
-// Initialize Discord Transcripts
-const transcripts = new DiscordTranscripts({
-  token: process.env.DISCORD_TOKEN
 });
 
 // Configure your GitHub repository details
@@ -34,8 +29,7 @@ export default async function handler(req, res) {
 
   try {
     // Generate transcript
-    const transcript = await transcripts.createTranscript({
-      channel: channelID,
+    const transcript = await discordTranscripts.createTranscript(channelID, {
       saveImages: true,
       poweredBy: false,
       filename: `${channelID}.html`
