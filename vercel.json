@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "env": {
-    "GITHUB_TOKEN": "@github_token"
-  },
   "builds": [
     {
       "src": "api/createfile.js",
